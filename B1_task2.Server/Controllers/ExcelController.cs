@@ -1,4 +1,4 @@
-﻿using B1_task2.Server.Data;
+using B1_task2.Server.Data;
 using B1_task2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +20,7 @@ public class ExcelController : ControllerBase
     [HttpGet("files")]
     public async Task<IActionResult> GetFiles()
     {
+        //получение списка файлов
         var files = await _excelService.GetFilesAsync();
         return Ok(files);
     }
@@ -27,6 +28,7 @@ public class ExcelController : ControllerBase
     [HttpGet("filedata/{fileId}")]
     public async Task<IActionResult> GetFileData(int fileId)
     {
+        //получение данных файла
         var response = await _excelService.GetFileDataAsync(fileId);
         return Ok(response);
     }
@@ -34,6 +36,7 @@ public class ExcelController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> UploadFile(IFormFile inputfile)
     {
+        //загрузка файла
         var result = await _excelService.UploadFileAsync(inputfile);
         if (result)
         {
