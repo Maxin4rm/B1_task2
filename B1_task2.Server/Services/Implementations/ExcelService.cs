@@ -1,4 +1,4 @@
-﻿using B1_task2.Server.Data;
+using B1_task2.Server.Data;
 using B1_task2.Server.DTO.ResponseDTO;
 using B1_task2.Server.Models;
 using B1_task2.Server.Services.Interfaces;
@@ -35,15 +35,15 @@ namespace B1_task2.Server.Services.Implementations
                 return null;
             }
 
-            // Получаем балансы, включая классы и их балансы
+            //получение балансов, включая классы и их балансы
             var balances = await _context.Balances
                 .Include(b => b.Account)
-                    .ThenInclude(a => a.Class) // Загружаем классы
-                        .ThenInclude(c => c.ClassBalance) // Загружаем балансы классов
+                    .ThenInclude(a => a.Class) //загрузка классов
+                        .ThenInclude(c => c.ClassBalance) //загрузка балансов классов
                 .Where(b => b.Account!.FileID == fileId)
                 .ToListAsync();
 
-            // Группируем данные по классам
+            //группировка данных по классам
             var classGroups = balances
                 .GroupBy(b => b.Account!.Class)
                 .Select(g => new ClassInfoResponseDTO
@@ -64,7 +64,7 @@ namespace B1_task2.Server.Services.Implementations
                 })
                 .ToList();
 
-            // Создаем ответ
+            //создание ответа
             var response = new FileDataResponseDTO
             {
                 File = new FileInfoResponseDTO
@@ -93,7 +93,7 @@ namespace B1_task2.Server.Services.Implementations
                 IWorkbook workbook = WorkbookFactory.Create(stream);
                 ISheet worksheet = workbook.GetSheetAt(0);
                 int rowCount = worksheet.LastRowNum;
-
+                //поллучение данных о файла(до начала таблицы)
                 var currFile = new File
                 {
                     FileName = inputfile.FileName,
@@ -101,6 +101,7 @@ namespace B1_task2.Server.Services.Implementations
                 };
                 _context.Files.Add(currFile);
                 List<Account> accounts = [];
+                //чтение таблицы
                 for (int row = 8; row <= rowCount; row++)
                 {
                     IRow sourceRow = worksheet.GetRow(row);
@@ -111,6 +112,7 @@ namespace B1_task2.Server.Services.Implementations
 
                     if (!Int32.TryParse(currCell, out _))
                     {
+                        //анализируемая строка описывает название класса
                         if (currCell.StartsWith("КЛАСС"))
                         {
                             currClass = new Class
@@ -121,6 +123,7 @@ namespace B1_task2.Server.Services.Implementations
                         }
                         else if (currCell.StartsWith("ПО КЛАССУ"))
                         {
+                            //анализируемая строка описывает баланс класса
                             currClass!.ClassBalance = new Balance
                             {
                                 IncomingActive = Decimal.Parse(sourceRow.GetCell(1)?.ToString() ?? "0"),
@@ -133,6 +136,7 @@ namespace B1_task2.Server.Services.Implementations
                         }
                         else if (currCell.StartsWith("БАЛАНС"))
                         {
+                            //анализируемая строка описывает общий баланс по файлу
                             currFile.Balance = new Balance
                             {
                                 IncomingActive = Decimal.Parse(sourceRow.GetCell(1)?.ToString() ?? "0"),
@@ -145,7 +149,7 @@ namespace B1_task2.Server.Services.Implementations
                         }
                         continue;
                     }
-                    // Чтение данных из Excel и сохранение в БД
+                    //создание объекта Account ("б/сч")
                     var account = new Account
                     {
                         AccountNumber = sourceRow.GetCell(0)?.ToString() ?? string.Empty,
@@ -167,11 +171,14 @@ namespace B1_task2.Server.Services.Implementations
                     _context.Balances.Add(balance);
                 }
             }
+            //сохранение данных контекста в БД
             await _context.SaveChangesAsync();
             return true;
         }
+
         private static string GetFileInfo(ref ISheet worksheet)
         {
+            //получение информации о файле (текст до начала таблицы)
             string info = "";
             for (int row = 0; row <= 5; row++)
             {
